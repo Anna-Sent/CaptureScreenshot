@@ -68,21 +68,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setContentView(R.layout.activity_main)
         val binding = ActivityMainBinding.bind(findViewById(R.id.content))
         binding.start.setOnClickListener {
-            if (overlayView != null) {
-                return@setOnClickListener
-            }
-            if (!tryToDrawOverlay()) {
-                requestOverlayPermission()
-            }
         }
         binding.getPermission.setOnClickListener {
-            // This initiates a prompt dialog for the user to confirm screen projection.
-            val mMediaProjectionManager =
-                getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            startActivityForResult(
-                mMediaProjectionManager.createScreenCaptureIntent(),
-                REQUEST_MEDIA_PROJECTION
-            )
+        }
+        if (overlayView != null) {
+            return
+        }
+        if (!tryToDrawOverlay()) {
+            requestOverlayPermission()
         }
     }
 
@@ -106,6 +99,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 startService(Intent(this, MediaProjectionService::class.java))
             mResultCode = resultCode
             mResultData = data
+            setUpVirtualDisplay()
         }
     }
 
@@ -139,7 +133,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             overlayView = view
             val binding = OverlayBinding.bind(view)
             binding.capture.setOnClickListener {
-                setUpVirtualDisplay()
+                if (mResultData == null) {
+                    val mMediaProjectionManager =
+                        getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+                    startActivityForResult(
+                        mMediaProjectionManager.createScreenCaptureIntent(),
+                        REQUEST_MEDIA_PROJECTION
+                    )
+                } else {
+                    setUpVirtualDisplay()
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
