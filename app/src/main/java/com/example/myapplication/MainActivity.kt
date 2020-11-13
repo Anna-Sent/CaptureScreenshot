@@ -15,6 +15,7 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.Gravity
@@ -100,8 +101,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 startService(Intent(this, MediaProjectionService::class.java))
             mResultCode = resultCode
             mResultData = data
-            init()
-            setUpVirtualDisplay()
+            Handler().postDelayed({
+                init()
+                setUpVirtualDisplay()
+            }, 500)
         }
     }
 
