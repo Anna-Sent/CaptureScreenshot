@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.hardware.display.DisplayManager
 import android.media.Image
 import android.media.ImageReader
+import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
@@ -99,6 +100,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 startService(Intent(this, MediaProjectionService::class.java))
             mResultCode = resultCode
             mResultData = data
+            init()
             setUpVirtualDisplay()
         }
     }
@@ -113,6 +115,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             )
         ) {
             drawOverlay()
+            //finish()
             true
         } else {
             false
@@ -148,21 +151,28 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             e.printStackTrace()
         }
 
+    private var mMediaProjectionManager: MediaProjectionManager? = null
+    private var mMediaProjection: MediaProjection? = null
+    private var mScreenDensity: Int? = null
+
+    private fun init() {
+        mMediaProjectionManager =
+            getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        mMediaProjection =
+            mMediaProjectionManager!!.getMediaProjection(mResultCode, mResultData!!)
+        val metrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(metrics)
+        mScreenDensity = metrics.densityDpi
+    }
+
     private fun setUpVirtualDisplay() {
         try {
-            val mMediaProjectionManager =
-                getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-            val mMediaProjection =
-                mMediaProjectionManager.getMediaProjection(mResultCode, mResultData!!)
-            val metrics = DisplayMetrics()
-            windowManager.defaultDisplay.getMetrics(metrics)
-            val mScreenDensity = metrics.densityDpi
             val mImageReader = ImageReader.newInstance(720, 1024, RGBA_8888, 1)
-            mMediaProjection.createVirtualDisplay(
+            mMediaProjection!!.createVirtualDisplay(
                 "ScreenCapture",
                 720,
                 1024,
-                mScreenDensity,
+                mScreenDensity!!,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 mImageReader.getSurface(),
                 null,
