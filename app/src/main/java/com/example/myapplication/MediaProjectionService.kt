@@ -234,66 +234,63 @@ class MediaProjectionService : Service() {
     }
 
     private fun createVirtualDisplay(mImageReader: ImageReader) {
-        mImageReader.setOnImageAvailableListener(object : ImageReader.OnImageAvailableListener {
+        mImageReader.setOnImageAvailableListener({ reader ->
+            val mWidth = 720
+            val mHeight = 1024
 
-            override fun onImageAvailable(reader: ImageReader) {
-                val mWidth = 720
-                val mHeight = 1024
+            var image: Image? = null
+            var fos: FileOutputStream? = null
+            var bitmap: Bitmap? = null
+            try {
+                image = reader.acquireLatestImage()
+                if (image != null) {
+                    var planes: Array<Image.Plane?> = arrayOfNulls<Image.Plane>(0)
+                    planes = image.getPlanes()
+                    val buffer: ByteBuffer = planes[0]!!.getBuffer()
+                    val pixelStride: Int = planes[0]!!.getPixelStride()
+                    val rowStride: Int = planes[0]!!.getRowStride()
+                    val rowPadding: Int = rowStride - pixelStride * mWidth
 
-                var image: Image? = null
-                var fos: FileOutputStream? = null
-                var bitmap: Bitmap? = null
-                try {
-                    image = reader.acquireLatestImage()
-                    if (image != null) {
-                        var planes: Array<Image.Plane?> = arrayOfNulls<Image.Plane>(0)
-                        planes = image.getPlanes()
-                        val buffer: ByteBuffer = planes[0]!!.getBuffer()
-                        val pixelStride: Int = planes[0]!!.getPixelStride()
-                        val rowStride: Int = planes[0]!!.getRowStride()
-                        val rowPadding: Int = rowStride - pixelStride * mWidth
+                    bitmap = Bitmap.createBitmap(
+                        mWidth + rowPadding / pixelStride,
+                        mHeight,
+                        Bitmap.Config.ARGB_8888
+                    )
+                    bitmap.copyPixelsFromBuffer(buffer)
 
-                        bitmap = Bitmap.createBitmap(
-                            mWidth + rowPadding / pixelStride,
-                            mHeight,
-                            Bitmap.Config.ARGB_8888
-                        )
-                        bitmap.copyPixelsFromBuffer(buffer)
+                    val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
+                    val formattedDate: String =
+                        df.format(Calendar.getInstance().getTime()).trim()
+                    val finalDate = formattedDate//.replace(":", "")
+                    val imgName: String = "Screenshot_" + finalDate + ".jpg"
+                    val mPath: String =
+                        getAppSpecificAlbumStorageDir(
+                            applicationContext,
+                            "Screnshots"
+                        )?.absolutePath + "/" + imgName
+                    val imageFile = File(mPath)
+                    fos = FileOutputStream(imageFile)
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
 
-                        val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
-                        val formattedDate: String =
-                            df.format(Calendar.getInstance().getTime()).trim()
-                        val finalDate = formattedDate//.replace(":", "")
-                        val imgName: String = "Screenshot_" + finalDate + ".jpg"
-                        val mPath: String =
-                            getAppSpecificAlbumStorageDir(
-                                applicationContext,
-                                "Screnshots"
-                            )?.absolutePath + "/" + imgName
-                        val imageFile = File(mPath)
-                        fos = FileOutputStream(imageFile)
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-
-                        if (overlayBinding != null) {
-                            overlayBinding!!.image.setImageDrawable(Drawable.createFromPath(mPath))
-                        }
+                    if (overlayBinding != null) {
+                        overlayBinding!!.image.setImageDrawable(Drawable.createFromPath(mPath))
                     }
-                } catch (e: java.lang.Exception) {
-                    Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
-                    e.printStackTrace()
-                } finally {
-                    if (fos != null) {
-                        try {
-                            fos.close()
-                        } catch (ioe: IOException) {
-                            ioe.printStackTrace()
-                        }
-                    }
-                    bitmap?.recycle()
-                    image?.close()
-                    mImageReader.close()
-                    overlayView?.isVisible = true
                 }
+            } catch (e: java.lang.Exception) {
+                Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
+                e.printStackTrace()
+            } finally {
+                if (fos != null) {
+                    try {
+                        fos.close()
+                    } catch (ioe: IOException) {
+                        ioe.printStackTrace()
+                    }
+                }
+                bitmap?.recycle()
+                image?.close()
+                mImageReader.close()
+                overlayView?.isVisible = true
             }
         }, null)
     }
