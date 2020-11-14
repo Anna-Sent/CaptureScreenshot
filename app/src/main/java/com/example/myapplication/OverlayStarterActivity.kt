@@ -87,7 +87,7 @@ class OverlayStarterActivity : AppCompatActivity() {
     }
 
     private fun checkMediaProjection() {
-        if (checkMedia && !mService.hasMediaProjection) {
+        if (checkMedia) {
             val mMediaProjectionManager =
                 getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             startActivityForResult(

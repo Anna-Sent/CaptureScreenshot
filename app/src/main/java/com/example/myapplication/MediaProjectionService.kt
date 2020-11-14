@@ -66,7 +66,7 @@ class MediaProjectionService : Service() {
     private var overlayView: View? = null
 
     val hasOverlay get() = overlayView != null
-    val hasMediaProjection get() = mResultData != null
+    private val hasMediaProjection get() = mResultData != null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
