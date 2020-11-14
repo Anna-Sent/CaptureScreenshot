@@ -13,6 +13,7 @@ import android.graphics.Color
 import android.graphics.PixelFormat.RGBA_8888
 import android.graphics.Point
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.Icon
 import android.hardware.display.DisplayManager
 import android.media.Image
 import android.media.ImageReader
@@ -114,7 +115,7 @@ class MediaProjectionService : Service() {
         val stopIntent =
             PendingIntent.getService(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "001"
             val channelName = "myChannel"
             val channel =
@@ -123,26 +124,40 @@ class MediaProjectionService : Service() {
             channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
-            val notification: Notification = Notification.Builder(applicationContext, channelId)
-                .setOngoing(true)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .setContentTitle("CaptureScreenshot")
-                .addAction(
-                    Notification.Action.Builder(R.mipmap.ic_launcher, "Stop", stopIntent).build()
-                )
-                .build()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    11,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-                )
-            } else {
-                startForeground(11, notification)
-            }
+            Notification.Builder(applicationContext, channelId)
         } else {
-            startForeground(11, Notification())
+            @Suppress("deprecation")
+            Notification.Builder(applicationContext)
+        }
+            .setOngoing(true)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .setContentTitle("CaptureScreenshot")
+            .addAction(
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    Notification.Action.Builder(
+                        Icon.createWithResource(
+                            applicationContext,
+                            R.mipmap.ic_launcher
+                        ), "Stop", stopIntent
+                    )
+                } else {
+                    @Suppress("deprecation")
+                    Notification.Action.Builder(
+                        R.mipmap.ic_launcher, "Stop", stopIntent
+                    )
+                }.build()
+            )
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                11,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            )
+        } else {
+            startForeground(11, notification)
         }
     }
 
