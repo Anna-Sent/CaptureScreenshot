@@ -75,7 +75,6 @@ class MediaProjectionService : Service() {
         mScreenWidth = intent.getIntExtra("width", 720);
         mScreenHeight = intent.getIntExtra("height", 1280);
 
-
         if (mResultData != null) {
             init()
             setUpVirtualDisplay()
@@ -173,10 +172,6 @@ class MediaProjectionService : Service() {
         } else {
             false
         }
-
-    private fun checkOverlay() {
-
-    }
 
     private var mMediaProjectionManager: MediaProjectionManager? = null
     private var mMediaProjection: MediaProjection? = null
