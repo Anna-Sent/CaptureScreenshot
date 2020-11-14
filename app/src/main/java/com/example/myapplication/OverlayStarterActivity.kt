@@ -23,7 +23,9 @@ class OverlayStarterActivity : AppCompatActivity() {
     lateinit var mService: MediaProjectionService
     var mBound = false
 
-    val checkMedia get() = intent.getBooleanExtra("checkMedia", false)
+    val checkMedia
+        get() = intent.getBooleanExtra("checkMedia", false)
+                || intent.action == "android.intent.action.MAIN"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
