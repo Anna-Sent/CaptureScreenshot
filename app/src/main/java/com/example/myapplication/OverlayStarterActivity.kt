@@ -71,6 +71,7 @@ class OverlayStarterActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_PERMISSION) {
             mService.tryToDrawOverlay()
+            finish()
         } else if (requestCode == REQUEST_MEDIA_PROJECTION) {
             startService(
                 Intent(this, MediaProjectionService::class.java)
