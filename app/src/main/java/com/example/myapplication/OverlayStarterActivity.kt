@@ -91,7 +91,7 @@ class OverlayStarterActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_PERMISSION) {
-            mService.tryToDrawOverlay()
+            mService.drawOverlay()
             finish()
         } else if (requestCode == REQUEST_MEDIA_PROJECTION) {
             startService(

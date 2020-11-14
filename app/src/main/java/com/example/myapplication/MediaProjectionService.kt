@@ -172,7 +172,7 @@ class MediaProjectionService : Service() {
         return mBinder
     }
 
-    private fun drawOverlay() =
+    fun drawOverlay() =
         try {
             val windowManager =
                 applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
