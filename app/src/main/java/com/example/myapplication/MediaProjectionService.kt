@@ -1,9 +1,6 @@
 package com.example.myapplication
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -20,6 +17,7 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Binder
 import android.os.Build
+import android.os.Environment
 import android.os.IBinder
 import android.provider.Settings
 import android.util.DisplayMetrics
@@ -83,6 +81,8 @@ class MediaProjectionService : Service() {
                 init()
                 // setUpVirtualDisplay()
             }
+        } else if (intent?.action == "stop") {
+            stopSelf()
         }
 
         if (hasOverlay) {
@@ -93,11 +93,19 @@ class MediaProjectionService : Service() {
         return START_REDELIVER_INTENT
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+
+        val windowManager =
+            applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        windowManager.removeView(overlayView)
+    }
+
     private fun startForeground() {
-//        val activityIntent = Intent(this, MainActivity::class.java)
-//        activityIntent.action = "stop"
-//        val contentIntent =
-//            PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val activityIntent = Intent(this, MediaProjectionService::class.java)
+        activityIntent.action = "stop"
+        val stopIntent =
+            PendingIntent.getService(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "001"
@@ -112,7 +120,10 @@ class MediaProjectionService : Service() {
                 .setOngoing(true)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setCategory(Notification.CATEGORY_SERVICE)
-                .setContentTitle("Cancel")
+                .setContentTitle("CaptureScreenshot")
+                .addAction(
+                    Notification.Action.Builder(R.mipmap.ic_launcher, "Stop", stopIntent).build()
+                )
 //                .setContentIntent(contentIntent)
                 .build()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -172,6 +183,7 @@ class MediaProjectionService : Service() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
         }
 
     fun tryToDrawOverlay() =
@@ -249,25 +261,26 @@ class MediaProjectionService : Service() {
                         )
                         bitmap.copyPixelsFromBuffer(buffer)
 
-                        val df = SimpleDateFormat("dd-MM-yyyy_HH:mm:ss.sss")
+                        val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
                         val formattedDate: String =
                             df.format(Calendar.getInstance().getTime()).trim()
-                        val finalDate = formattedDate.replace(":", "-")
-                        val imgName: String = "img_" + finalDate + ".jpg"
+                        val finalDate = formattedDate//.replace(":", "")
+                        val imgName: String = "Screenshot_" + finalDate + ".jpg"
                         val mPath: String =
-                            applicationContext.getExternalFilesDir(null)?.absolutePath + "/" + imgName
+                            getAppSpecificAlbumStorageDir(
+                                applicationContext,
+                                "Screnshots"
+                            )?.absolutePath + "/" + imgName
                         val imageFile = File(mPath)
                         fos = FileOutputStream(imageFile)
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
 
                         if (overlayBinding != null) {
                             overlayBinding!!.image.setImageDrawable(Drawable.createFromPath(mPath))
-                            overlayView?.isVisible = true
                         }
-
-                        // stopProjection()
                     }
                 } catch (e: java.lang.Exception) {
+                    Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
                     e.printStackTrace()
                 } finally {
                     if (fos != null) {
@@ -278,12 +291,23 @@ class MediaProjectionService : Service() {
                         }
                     }
                     bitmap?.recycle()
-                    if (image != null) {
-                        image.close()
-                    }
+                    image?.close()
                     mImageReader.close()
+                    overlayView?.isVisible = true
                 }
             }
         }, null)
+    }
+
+    fun getAppSpecificAlbumStorageDir(context: Context, albumName: String): File? {
+        // Get the pictures directory that's inside the app-specific directory on
+        // external storage.
+        val file = File(
+            context.getExternalFilesDir(
+                Environment.DIRECTORY_PICTURES
+            ), albumName
+        )
+        file.mkdirs()
+        return file
     }
 }
