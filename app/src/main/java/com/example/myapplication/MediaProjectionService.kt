@@ -25,6 +25,7 @@ import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.*
 import android.widget.Toast
+import androidx.core.view.isVisible
 import com.example.myapplication.databinding.OverlayBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -64,6 +65,7 @@ class MediaProjectionService : Service() {
     private var mScreenHeight: Int = 0
 
     private var overlayView: View? = null
+    private var overlayBinding: OverlayBinding? = null
 
     val hasOverlay get() = overlayView != null
     val hasMediaProjection get() = mResultData != null
@@ -152,6 +154,7 @@ class MediaProjectionService : Service() {
             windowManager.addView(view, params)
             overlayView = view
             val binding = OverlayBinding.bind(view)
+            overlayBinding = binding
             binding.capture.text = if (hasMediaProjection) "Capture" else "Request permission"
             binding.capture.setOnClickListener {
                 if (mResultData == null) {
@@ -199,6 +202,7 @@ class MediaProjectionService : Service() {
     }
 
     private fun setUpVirtualDisplay() {
+        overlayView?.isVisible = false
         try {
             val mImageReader = ImageReader.newInstance(720, 1024, RGBA_8888, 1)
             mMediaProjection!!.createVirtualDisplay(
@@ -213,6 +217,7 @@ class MediaProjectionService : Service() {
             )
             createVirtualDisplay(mImageReader)
         } catch (t: Throwable) {
+            overlayView?.isVisible = true
             Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_LONG).show()
         }
     }
@@ -228,31 +233,22 @@ class MediaProjectionService : Service() {
                 var fos: FileOutputStream? = null
                 var bitmap: Bitmap? = null
                 try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                        image = reader.acquireLatestImage()
-                    }
+                    image = reader.acquireLatestImage()
                     if (image != null) {
                         var planes: Array<Image.Plane?> = arrayOfNulls<Image.Plane>(0)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                            planes = image.getPlanes()
-                        }
+                        planes = image.getPlanes()
                         val buffer: ByteBuffer = planes[0]!!.getBuffer()
                         val pixelStride: Int = planes[0]!!.getPixelStride()
                         val rowStride: Int = planes[0]!!.getRowStride()
                         val rowPadding: Int = rowStride - pixelStride * mWidth
 
-                        // create bitmap
-                        //
                         bitmap = Bitmap.createBitmap(
                             mWidth + rowPadding / pixelStride,
                             mHeight,
                             Bitmap.Config.ARGB_8888
                         )
-                        //  bitmap = Bitmap.createBitmap(mImageReader.getWidth() + rowPadding / pixelStride,
-                        //    mImageReader.getHeight(), Bitmap.Config.ARGB_8888);
                         bitmap.copyPixelsFromBuffer(buffer)
 
-                        // write bitmap to a file
                         val df = SimpleDateFormat("dd-MM-yyyy_HH:mm:ss.sss")
                         val formattedDate: String =
                             df.format(Calendar.getInstance().getTime()).trim()
@@ -264,9 +260,9 @@ class MediaProjectionService : Service() {
                         fos = FileOutputStream(imageFile)
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
 
-                        if (overlayView != null) {
-                            val binding = OverlayBinding.bind(overlayView!!)
-                            binding.image.setImageDrawable(Drawable.createFromPath(mPath))
+                        if (overlayBinding != null) {
+                            overlayBinding!!.image.setImageDrawable(Drawable.createFromPath(mPath))
+                            overlayView?.isVisible = true
                         }
 
                         // stopProjection()
