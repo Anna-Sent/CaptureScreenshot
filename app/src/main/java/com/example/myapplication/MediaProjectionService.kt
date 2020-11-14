@@ -162,7 +162,6 @@ class MediaProjectionService : Service() {
                             OverlayStarterActivity::class.java
                         )
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            .putExtra("checkMedia", true)
                     )
                 } else {
                     setUpVirtualDisplay()
