@@ -44,6 +44,21 @@ class OverlayStarterActivity : AppCompatActivity() {
         }
     }
 
+    override fun finish() {
+        super.finish()
+        overridePendingTransition(0, 0)
+    }
+
+    override fun startActivity(intent: Intent?) {
+        super.startActivity(intent)
+        overridePendingTransition(0, 0)
+    }
+
+    override fun startActivityForResult(intent: Intent?, requestCode: Int) {
+        super.startActivityForResult(intent, requestCode)
+        overridePendingTransition(0, 0)
+    }
+
     @TargetApi(Build.VERSION_CODES.M)
     private fun requestOverlayPermission() {
         startActivityForResult(
