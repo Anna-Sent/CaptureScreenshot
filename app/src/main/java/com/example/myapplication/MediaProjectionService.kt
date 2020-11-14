@@ -1,12 +1,15 @@
 package com.example.myapplication
 
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.PixelFormat
 import android.graphics.PixelFormat.RGBA_8888
 import android.graphics.Point
 import android.graphics.drawable.Drawable
@@ -15,10 +18,19 @@ import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
-import android.os.*
+import android.os.Binder
+import android.os.Build
+import android.os.Environment
+import android.os.Handler
+import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
 import android.util.DisplayMetrics
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.view.isVisible
 import com.example.myapplication.databinding.OverlayBinding
@@ -28,7 +40,6 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
-
 
 class MediaProjectionService : Service() {
 
@@ -45,7 +56,7 @@ class MediaProjectionService : Service() {
                     type = WindowManager.LayoutParams.TYPE_PHONE
                 }
                 flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                format = PixelFormat.RGBA_8888
+                format = RGBA_8888
                 width = ViewGroup.LayoutParams.WRAP_CONTENT
                 height = ViewGroup.LayoutParams.WRAP_CONTENT
                 this.x = x
@@ -76,7 +87,6 @@ class MediaProjectionService : Service() {
 
             if (mResultData != null) {
                 init()
-                // setUpVirtualDisplay()
             }
         } else if (intent?.action == "stop") {
             stopSelf()
@@ -121,7 +131,6 @@ class MediaProjectionService : Service() {
                 .addAction(
                     Notification.Action.Builder(R.mipmap.ic_launcher, "Stop", stopIntent).build()
                 )
-//                .setContentIntent(contentIntent)
                 .build()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
