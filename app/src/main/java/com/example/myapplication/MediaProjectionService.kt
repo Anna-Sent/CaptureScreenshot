@@ -15,10 +15,7 @@ import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
-import android.os.Binder
-import android.os.Build
-import android.os.Environment
-import android.os.IBinder
+import android.os.*
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.*
@@ -215,22 +212,24 @@ class MediaProjectionService : Service() {
 
     private fun setUpVirtualDisplay() {
         overlayView?.isVisible = false
-        try {
-            val mImageReader = ImageReader.newInstance(720, 1024, RGBA_8888, 1)
-            mMediaProjection!!.createVirtualDisplay(
-                "ScreenCapture",
-                720,
-                1024,
-                mScreenDensity!!,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                mImageReader.getSurface(),
-                null,
-                null
-            )
-            createVirtualDisplay(mImageReader)
-        } catch (t: Throwable) {
-            overlayView?.isVisible = true
-            Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_LONG).show()
+        Handler(Looper.getMainLooper()).post {
+            try {
+                val mImageReader = ImageReader.newInstance(720, 1024, RGBA_8888, 1)
+                mMediaProjection!!.createVirtualDisplay(
+                    "ScreenCapture",
+                    720,
+                    1024,
+                    mScreenDensity!!,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    mImageReader.getSurface(),
+                    null,
+                    null
+                )
+                createVirtualDisplay(mImageReader)
+            } catch (t: Throwable) {
+                overlayView?.isVisible = true
+                Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_LONG).show()
+            }
         }
     }
 
