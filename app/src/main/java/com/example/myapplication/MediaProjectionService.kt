@@ -79,8 +79,13 @@ class MediaProjectionService : Service() {
 
             if (mResultData != null) {
                 init()
-                setUpVirtualDisplay()
+                // setUpVirtualDisplay()
             }
+        }
+
+        if (hasOverlay) {
+            val binding = OverlayBinding.bind(overlayView!!)
+            binding.capture.text = if (hasMediaProjection) "Capture" else "Request permission"
         }
 
         return START_REDELIVER_INTENT
@@ -147,6 +152,7 @@ class MediaProjectionService : Service() {
             windowManager.addView(view, params)
             overlayView = view
             val binding = OverlayBinding.bind(view)
+            binding.capture.text = if (hasMediaProjection) "Capture" else "Request permission"
             binding.capture.setOnClickListener {
                 if (mResultData == null) {
                     // request permission
@@ -156,6 +162,7 @@ class MediaProjectionService : Service() {
                             OverlayStarterActivity::class.java
                         )
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .putExtra("checkMedia", true)
                     )
                 } else {
                     setUpVirtualDisplay()

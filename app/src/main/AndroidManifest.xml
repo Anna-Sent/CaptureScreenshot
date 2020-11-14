@@ -16,7 +16,6 @@
         <activity
             android:name=".OverlayStarterActivity"
             android:autoRemoveFromRecents="true"
-            android:label=""
             android:theme="@style/Theme.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
