@@ -28,6 +28,11 @@ class OverlayStarterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         startService(Intent(this, MediaProjectionService::class.java))
+
+        if (intent.getBooleanExtra("fromService", false)) {
+            val intent = Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+            sendBroadcast(intent)
+        }
     }
 
     override fun onStart() {
@@ -80,7 +85,7 @@ class OverlayStarterActivity : AppCompatActivity() {
             }
         } else {
             if (service.hasMediaProjection) {
-                Toast.makeText(this, "Click Capture", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Tap Capture to take screenshot", Toast.LENGTH_LONG).show()
                 finish()
             } else {
                 checkMediaProjection()

@@ -110,10 +110,15 @@ class MediaProjectionService : Service() {
     }
 
     private fun startForeground() {
-        val activityIntent = Intent(this, MediaProjectionService::class.java)
-        activityIntent.action = "stop"
+        val serviceIntent = Intent(this, MediaProjectionService::class.java)
+        serviceIntent.action = "stop"
         val stopIntent =
-            PendingIntent.getService(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+            PendingIntent.getService(this, 0, serviceIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val activityIntent = Intent(this, OverlayStarterActivity::class.java)
+            .putExtra("fromService", true)
+        val contentIntent =
+            PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "001"
@@ -133,6 +138,7 @@ class MediaProjectionService : Service() {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setContentTitle("CaptureScreenshot")
+            .setContentIntent(contentIntent)
             .addAction(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     Notification.Action.Builder(
