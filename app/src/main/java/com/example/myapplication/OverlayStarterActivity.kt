@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class OverlayStarterActivity : AppCompatActivity() {
@@ -60,10 +61,15 @@ class OverlayStarterActivity : AppCompatActivity() {
             if (!hasPermission) {
                 requestOverlayPermission()
             } else {
-                checkMediaProjection()
+                finish()
             }
         } else {
-            checkMediaProjection()
+            if (service.hasMediaProjection) {
+                Toast.makeText(this, "Click Capture", Toast.LENGTH_LONG).show()
+                finish()
+            } else {
+                checkMediaProjection()
+            }
         }
     }
 
