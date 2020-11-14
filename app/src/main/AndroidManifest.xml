@@ -3,7 +3,6 @@
     package="com.example.myapplication">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
@@ -16,6 +15,7 @@
 
         <activity
             android:name=".OverlayStarterActivity"
+            android:autoRemoveFromRecents="true"
             android:theme="@style/Theme.Transparent">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,6 +25,7 @@
         </activity>
         <activity
             android:name=".MediaProjectionStarterActivity"
+            android:autoRemoveFromRecents="true"
             android:theme="@style/Theme.Transparent" />
 
         <service
