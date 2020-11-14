@@ -66,18 +66,21 @@ class MediaProjectionService : Service() {
     private var overlayView: View? = null
 
     val hasOverlay get() = overlayView != null
+    val hasMediaProjection get() = mResultData != null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground()
 
-        mResultCode = intent!!.getIntExtra("code", -1);
-        mResultData = intent.getParcelableExtra("data");
-        mScreenWidth = intent.getIntExtra("width", 720);
-        mScreenHeight = intent.getIntExtra("height", 1280);
+        if (intent?.action == "init") {
+            mResultCode = intent.getIntExtra("code", -1);
+            mResultData = intent.getParcelableExtra("data");
+            mScreenWidth = intent.getIntExtra("width", 720);
+            mScreenHeight = intent.getIntExtra("height", 1280);
 
-        if (mResultData != null) {
-            init()
-            setUpVirtualDisplay()
+            if (mResultData != null) {
+                init()
+                setUpVirtualDisplay()
+            }
         }
 
         return START_REDELIVER_INTENT
@@ -150,7 +153,7 @@ class MediaProjectionService : Service() {
                     applicationContext.startActivity(
                         Intent(
                             this,
-                            MediaProjectionStarterActivity::class.java
+                            OverlayStarterActivity::class.java
                         )
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )

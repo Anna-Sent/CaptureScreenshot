@@ -24,11 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".MediaProjectionStarterActivity"
-            android:autoRemoveFromRecents="true"
-            android:label=""
-            android:theme="@style/Theme.Transparent" />
 
         <service
             android:name=".MediaProjectionService"

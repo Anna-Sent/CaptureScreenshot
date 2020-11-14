@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,6 +17,7 @@ class OverlayStarterActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_PERMISSION = 1
+        private const val REQUEST_MEDIA_PROJECTION = 2
     }
 
     lateinit var mService: MediaProjectionService
@@ -58,10 +60,10 @@ class OverlayStarterActivity : AppCompatActivity() {
             if (!hasPermission) {
                 requestOverlayPermission()
             } else {
-                finish()
+                checkMediaProjection()
             }
         } else {
-            finish()
+            checkMediaProjection()
         }
     }
 
@@ -69,6 +71,28 @@ class OverlayStarterActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_PERMISSION) {
             mService.tryToDrawOverlay()
+
+            checkMediaProjection()
+        } else if (requestCode == REQUEST_MEDIA_PROJECTION) {
+            startService(
+                Intent(this, MediaProjectionService::class.java)
+                    .setAction("init")
+                    .putExtra("code", resultCode)
+                    .putExtra("data", data)
+            )
+            finish()
+        }
+    }
+
+    private fun checkMediaProjection() {
+        if (!mService.hasMediaProjection) {
+            val mMediaProjectionManager =
+                getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            startActivityForResult(
+                mMediaProjectionManager.createScreenCaptureIntent(),
+                REQUEST_MEDIA_PROJECTION
+            )
+        } else {
             finish()
         }
     }
