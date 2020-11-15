@@ -26,7 +26,6 @@ import android.os.Binder
 import android.os.Build
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
-import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -187,7 +186,6 @@ class MediaProjectionService : Service() {
         }
     }
 
-    // Binder given to clients
     private val mBinder: IBinder = LocalBinder()
 
     inner class LocalBinder : Binder() {
@@ -218,7 +216,6 @@ class MediaProjectionService : Service() {
             )
             binding.capture.setOnClickListener {
                 if (mResultData == null) {
-                    // request permission
                     applicationContext.startActivity(
                         Intent(
                             this,
@@ -328,16 +325,9 @@ class MediaProjectionService : Service() {
     private fun createCompressedImageFile(bitmap: Bitmap): File {
         try {
             val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
-            val formattedDate: String =
-                df.format(Calendar.getInstance().getTime()).trim()
-            val finalDate = formattedDate//.replace(":", "")
-            val imgName: String = "Screenshot_" + finalDate + ".jpg"
-            val mPath: String =
-                getAppSpecificAlbumStorageDir(
-                    applicationContext,
-                    "Screnshots"
-                )?.absolutePath + "/" + imgName
-            val imageFile = File(mPath)
+            val formattedDate = df.format(Calendar.getInstance().getTime()).trim()
+            val imgName = "Screenshot_$formattedDate.jpg"
+            val imageFile = File(getTmpDir(applicationContext), imgName)
             FileOutputStream(imageFile).use {
                 bitmap.compress(JPEG, 100, it)
             }
@@ -400,15 +390,5 @@ class MediaProjectionService : Service() {
         }
     }
 
-    private fun getAppSpecificAlbumStorageDir(context: Context, albumName: String): File? {
-        // Get the pictures directory that's inside the app-specific directory on
-        // external storage.
-        val file = File(
-            context.getExternalFilesDir(
-                Environment.DIRECTORY_PICTURES
-            ), albumName
-        )
-        file.mkdirs()
-        return file
-    }
+    private fun getTmpDir(context: Context) = context.externalCacheDir ?: context.cacheDir
 }
