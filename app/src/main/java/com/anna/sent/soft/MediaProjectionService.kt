@@ -35,7 +35,6 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.view.isVisible
 import com.anna.sent.soft.R.layout
-import com.anna.sent.soft.R.mipmap
 import com.anna.sent.soft.databinding.OverlayBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -122,37 +121,36 @@ class MediaProjectionService : Service() {
         val contentIntent =
             PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
+        val appName = applicationContext.resources.getString(R.string.app_name)
         val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "001"
-            val channelName = "myChannel"
             val channel =
-                NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_NONE)
+                NotificationChannel(appName, appName, NotificationManager.IMPORTANCE_NONE)
             channel.lightColor = Color.BLUE
             channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
-            Notification.Builder(applicationContext, channelId)
+            Notification.Builder(applicationContext, appName)
         } else {
             @Suppress("deprecation")
             Notification.Builder(applicationContext)
         }
             .setOngoing(true)
-            .setSmallIcon(mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_baseline_photo_camera_24)
             .setCategory(Notification.CATEGORY_SERVICE)
-            .setContentTitle("CaptureScreenshot")
+            .setContentTitle(appName)
             .setContentIntent(contentIntent)
             .addAction(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     Notification.Action.Builder(
                         Icon.createWithResource(
                             applicationContext,
-                            mipmap.ic_launcher
+                            R.drawable.ic_baseline_stop_24
                         ), "Stop", stopIntent
                     )
                 } else {
                     @Suppress("deprecation")
                     Notification.Action.Builder(
-                        mipmap.ic_launcher, "Stop", stopIntent
+                        R.drawable.ic_baseline_stop_24, "Stop", stopIntent
                     )
                 }.build()
             )
