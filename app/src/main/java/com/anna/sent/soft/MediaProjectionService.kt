@@ -1,5 +1,6 @@
 package com.anna.sent.soft
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,12 +10,12 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat.JPEG
 import android.graphics.Bitmap.Config
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.PixelFormat.RGBA_8888
 import android.graphics.Point
 import android.graphics.drawable.Icon
 import android.hardware.display.DisplayManager
@@ -32,7 +33,6 @@ import android.provider.MediaStore
 import android.provider.MediaStore.Audio
 import android.provider.MediaStore.Images.Media
 import android.provider.Settings
-import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -55,6 +55,7 @@ class MediaProjectionService : Service() {
         @Suppress("MagicNumber")
         private val STATUS_START_POINT = Point(24, 8)
 
+        @Suppress("SameParameterValue")
         private fun createOverlayParams(x: Int, y: Int, gravity: Int) =
             WindowManager.LayoutParams().apply {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -64,7 +65,7 @@ class MediaProjectionService : Service() {
                     type = WindowManager.LayoutParams.TYPE_PHONE
                 }
                 flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                format = RGBA_8888
+                format = PixelFormat.RGBA_8888
                 width = ViewGroup.LayoutParams.WRAP_CONTENT
                 height = ViewGroup.LayoutParams.WRAP_CONTENT
                 this.x = x
@@ -86,8 +87,8 @@ class MediaProjectionService : Service() {
         startForeground()
 
         if (intent?.action == "init") {
-            mResultCode = intent.getIntExtra("code", -1);
-            mResultData = intent.getParcelableExtra("data");
+            mResultCode = intent.getIntExtra("code", -1)
+            mResultData = intent.getParcelableExtra("data")
 
             if (mResultData != null) {
                 init()
@@ -189,6 +190,7 @@ class MediaProjectionService : Service() {
 
     fun drawOverlay() =
         try {
+            @SuppressLint("InflateParams")
             val view = LayoutInflater.from(applicationContext).inflate(R.layout.overlay, null)
             val params = createOverlayParams(
                 STATUS_START_POINT.x,
@@ -241,6 +243,7 @@ class MediaProjectionService : Service() {
             mMediaProjectionManager!!.getMediaProjection(mResultCode, mResultData!!)
     }
 
+    @SuppressLint("WrongConstant")
     private fun setUpVirtualDisplay() {
         overlayView?.isVisible = false
         Handler(Looper.getMainLooper()).post {
@@ -320,7 +323,7 @@ class MediaProjectionService : Service() {
     private fun createCompressedImageFile(bitmap: Bitmap): File {
         try {
             val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss", Locale.US)
-            val formattedDate = df.format(Calendar.getInstance().getTime()).trim()
+            val formattedDate = df.format(System.currentTimeMillis())
             val imgName = "Screenshot_$formattedDate.jpg"
             val imageFile = File(getTmpDir(applicationContext), imgName)
             FileOutputStream(imageFile).use {
@@ -389,14 +392,9 @@ class MediaProjectionService : Service() {
 
     private val windowManager get() = applicationContext.getSystemService(WINDOW_SERVICE) as WindowManager
 
-    private val screenSize get() = Point().also { windowManager.defaultDisplay.getSize(it) }
+    private val screenWidth get() = Resources.getSystem().displayMetrics.widthPixels
 
-    private val screenWidth get() = screenSize.x
+    private val screenHeight get() = Resources.getSystem().displayMetrics.heightPixels
 
-    private val screenHeight get() = screenSize.y
-
-    private val densityDpi
-        get() = DisplayMetrics().apply {
-            windowManager.defaultDisplay.getMetrics(this)
-        }.densityDpi
+    private val densityDpi get() = Resources.getSystem().displayMetrics.densityDpi
 }
