@@ -95,6 +95,7 @@ class MediaProjectionService : Service() {
             }
         } else if (intent?.action == "stop") {
             stopSelf()
+            sendBroadcast(Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
         }
 
         if (hasOverlay) {
