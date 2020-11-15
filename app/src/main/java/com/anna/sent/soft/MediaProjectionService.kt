@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.anna.sent.soft
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -34,7 +34,9 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.core.view.isVisible
-import com.example.myapplication.databinding.OverlayBinding
+import com.anna.sent.soft.R.layout
+import com.anna.sent.soft.R.mipmap
+import com.anna.sent.soft.databinding.OverlayBinding
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -135,7 +137,7 @@ class MediaProjectionService : Service() {
             Notification.Builder(applicationContext)
         }
             .setOngoing(true)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(mipmap.ic_launcher)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setContentTitle("CaptureScreenshot")
             .setContentIntent(contentIntent)
@@ -144,13 +146,13 @@ class MediaProjectionService : Service() {
                     Notification.Action.Builder(
                         Icon.createWithResource(
                             applicationContext,
-                            R.mipmap.ic_launcher
+                            mipmap.ic_launcher
                         ), "Stop", stopIntent
                     )
                 } else {
                     @Suppress("deprecation")
                     Notification.Action.Builder(
-                        R.mipmap.ic_launcher, "Stop", stopIntent
+                        mipmap.ic_launcher, "Stop", stopIntent
                     )
                 }.build()
             )
@@ -182,7 +184,7 @@ class MediaProjectionService : Service() {
         try {
             val windowManager =
                 applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            val view = LayoutInflater.from(applicationContext).inflate(R.layout.overlay, null)
+            val view = LayoutInflater.from(applicationContext).inflate(layout.overlay, null)
             val params = createOverlayParams(
                 STATUS_START_POINT.x,
                 STATUS_START_POINT.y,

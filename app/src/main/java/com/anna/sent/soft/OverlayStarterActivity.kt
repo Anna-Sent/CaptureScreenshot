@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.anna.sent.soft
 
 import android.annotation.TargetApi
 import android.content.ComponentName
@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.provider.Settings
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.anna.sent.soft.MediaProjectionService.LocalBinder
 
 class OverlayStarterActivity : AppCompatActivity() {
 
@@ -125,7 +126,7 @@ class OverlayStarterActivity : AppCompatActivity() {
             service: IBinder
         ) {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
-            val binder = service as MediaProjectionService.LocalBinder
+            val binder = service as LocalBinder
             mService = binder.service
             mBound = true
 
