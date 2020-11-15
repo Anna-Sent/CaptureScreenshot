@@ -135,7 +135,7 @@ class MediaProjectionService : Service() {
             Notification.Builder(applicationContext)
         }
             .setOngoing(true)
-            .setSmallIcon(R.drawable.ic_baseline_photo_camera_24)
+            .setSmallIcon(R.drawable.ic_camera)
             .setCategory(Notification.CATEGORY_SERVICE)
             .setContentTitle(appName)
             .setContentIntent(contentIntent)
@@ -144,13 +144,13 @@ class MediaProjectionService : Service() {
                     Notification.Action.Builder(
                         Icon.createWithResource(
                             applicationContext,
-                            R.drawable.ic_baseline_stop_24
+                            R.drawable.ic_stop
                         ), "Stop", stopIntent
                     )
                 } else {
                     @Suppress("deprecation")
                     Notification.Action.Builder(
-                        R.drawable.ic_baseline_stop_24, "Stop", stopIntent
+                        R.drawable.ic_stop, "Stop", stopIntent
                     )
                 }.build()
             )
