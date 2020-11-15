@@ -108,7 +108,7 @@ class MediaProjectionService : Service() {
 
         val windowManager =
             applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        windowManager.removeView(overlayView)
+        overlayView?.let { windowManager.removeView(it) }
     }
 
     private fun startForeground() {
