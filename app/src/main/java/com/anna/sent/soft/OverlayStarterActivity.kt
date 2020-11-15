@@ -86,7 +86,7 @@ class OverlayStarterActivity : AppCompatActivity() {
             }
         } else {
             if (service.hasMediaProjection) {
-                Toast.makeText(this, "Tap Capture to take screenshot", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, R.string.tap_capture, Toast.LENGTH_LONG).show()
                 finish()
             } else {
                 checkMediaProjection()

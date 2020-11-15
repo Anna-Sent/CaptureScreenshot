@@ -96,7 +96,9 @@ class MediaProjectionService : Service() {
 
         if (hasOverlay) {
             val binding = OverlayBinding.bind(overlayView!!)
-            binding.capture.text = if (hasMediaProjection) "Capture" else "Request permission"
+            binding.capture.text = applicationContext.getString(
+                if (hasMediaProjection) R.string.capture else R.string.permission_needed
+            )
         }
 
         return START_REDELIVER_INTENT
@@ -121,7 +123,7 @@ class MediaProjectionService : Service() {
         val contentIntent =
             PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
-        val appName = applicationContext.resources.getString(R.string.app_name)
+        val appName = applicationContext.getString(R.string.app_name)
         val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel =
                 NotificationChannel(appName, appName, NotificationManager.IMPORTANCE_NONE)
@@ -140,19 +142,26 @@ class MediaProjectionService : Service() {
             .setContentTitle(appName)
             .setContentIntent(contentIntent)
             .addAction(
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    Notification.Action.Builder(
-                        Icon.createWithResource(
-                            applicationContext,
-                            R.drawable.ic_stop
-                        ), "Stop", stopIntent
-                    )
-                } else {
-                    @Suppress("deprecation")
-                    Notification.Action.Builder(
-                        R.drawable.ic_stop, "Stop", stopIntent
-                    )
-                }.build()
+                run {
+                    val stop = applicationContext.getString(R.string.stop)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        Notification.Action.Builder(
+                            Icon.createWithResource(
+                                applicationContext,
+                                R.drawable.ic_stop
+                            ),
+                            stop,
+                            stopIntent
+                        )
+                    } else {
+                        @Suppress("deprecation")
+                        Notification.Action.Builder(
+                            R.drawable.ic_stop,
+                            stop,
+                            stopIntent
+                        )
+                    }.build()
+                }
             )
             .build()
 
@@ -193,7 +202,9 @@ class MediaProjectionService : Service() {
             overlayView = view
             val binding = OverlayBinding.bind(view)
             overlayBinding = binding
-            binding.capture.text = if (hasMediaProjection) "Capture" else "Request permission"
+            binding.capture.text = applicationContext.getString(
+                if (hasMediaProjection) R.string.capture else R.string.permission_needed
+            )
             binding.capture.setOnClickListener {
                 if (mResultData == null) {
                     // request permission
@@ -246,7 +257,7 @@ class MediaProjectionService : Service() {
             try {
                 val mImageReader = ImageReader.newInstance(720, 1024, RGBA_8888, 1)
                 mMediaProjection!!.createVirtualDisplay(
-                    "ScreenCapture",
+                    "CaptureScreen",
                     720,
                     1024,
                     mScreenDensity!!,
@@ -310,6 +321,7 @@ class MediaProjectionService : Service() {
                 Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
                 e.printStackTrace()
             } finally {
+                overlayView?.isVisible = true
                 if (fos != null) {
                     try {
                         fos.close()
@@ -320,7 +332,6 @@ class MediaProjectionService : Service() {
                 bitmap?.recycle()
                 image?.close()
                 mImageReader.close()
-                overlayView?.isVisible = true
             }
         }, null)
     }

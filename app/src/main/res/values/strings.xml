@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Capture Screenshot</string>
+    <string name="capture">Capture</string>
+    <string name="permission_needed">Request permission</string>
+    <string name="stop">Stop</string>
+    <string name="tap_capture">Tap Capture to take screenshot</string>
 </resources>
