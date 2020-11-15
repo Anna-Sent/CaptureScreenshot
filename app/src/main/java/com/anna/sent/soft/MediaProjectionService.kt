@@ -218,6 +218,9 @@ class MediaProjectionService : Service() {
                     setUpVirtualDisplay()
                 }
             }
+            binding.image.setOnClickListener { v ->
+                (v.tag as? Uri)?.let { showPhoto(it) }
+            }
         } catch (throwable: Throwable) {
             showError(R.string.failed_to_draw_overlay, throwable)
         }
@@ -287,6 +290,7 @@ class MediaProjectionService : Service() {
 
             if (overlayBinding != null) {
                 overlayBinding!!.image.setImageURI(uri)
+                overlayBinding!!.image.tag = uri
             }
         } catch (throwable: Throwable) {
             showError(R.string.failed_to_save_screenshot, throwable)
@@ -294,6 +298,15 @@ class MediaProjectionService : Service() {
             overlayView?.isVisible = true
             execSafely { reader.close() }
         }
+    }
+
+    private fun showPhoto(photoUri: Uri) {
+        startActivity(
+            Intent()
+                .setAction(Intent.ACTION_VIEW)
+                .setDataAndType(photoUri, "image/*")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     }
 
     private fun createBitmap(reader: ImageReader): Bitmap {
