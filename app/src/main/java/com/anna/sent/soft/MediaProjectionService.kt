@@ -33,12 +33,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.core.view.isVisible
 import com.anna.sent.soft.R.layout
 import com.anna.sent.soft.databinding.OverlayBinding
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
@@ -124,46 +124,47 @@ class MediaProjectionService : Service() {
             PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
         val appName = applicationContext.getString(R.string.app_name)
-        val notification: Notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                NotificationChannel(appName, appName, NotificationManager.IMPORTANCE_NONE)
-            channel.lightColor = Color.BLUE
-            channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
-            Notification.Builder(applicationContext, appName)
-        } else {
-            @Suppress("deprecation")
-            Notification.Builder(applicationContext)
-        }
-            .setOngoing(true)
-            .setSmallIcon(R.drawable.ic_camera)
-            .setCategory(Notification.CATEGORY_SERVICE)
-            .setContentTitle(appName)
-            .setContentIntent(contentIntent)
-            .addAction(
-                run {
-                    val stop = applicationContext.getString(R.string.stop)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        Notification.Action.Builder(
-                            Icon.createWithResource(
-                                applicationContext,
-                                R.drawable.ic_stop
-                            ),
-                            stop,
-                            stopIntent
-                        )
-                    } else {
-                        @Suppress("deprecation")
-                        Notification.Action.Builder(
-                            R.drawable.ic_stop,
-                            stop,
-                            stopIntent
-                        )
-                    }.build()
-                }
-            )
-            .build()
+        val notification =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel =
+                    NotificationChannel(appName, appName, NotificationManager.IMPORTANCE_NONE)
+                channel.lightColor = Color.BLUE
+                channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.createNotificationChannel(channel)
+                Notification.Builder(applicationContext, appName)
+            } else {
+                @Suppress("deprecation")
+                Notification.Builder(applicationContext)
+            }
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.ic_camera)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .setContentTitle(appName)
+                .setContentIntent(contentIntent)
+                .addAction(
+                    run {
+                        val stop = applicationContext.getString(R.string.stop)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            Notification.Action.Builder(
+                                Icon.createWithResource(
+                                    applicationContext,
+                                    R.drawable.ic_stop
+                                ),
+                                stop,
+                                stopIntent
+                            )
+                        } else {
+                            @Suppress("deprecation")
+                            Notification.Action.Builder(
+                                R.drawable.ic_stop,
+                                stop,
+                                stopIntent
+                            )
+                        }.build()
+                    }
+                )
+                .build()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(
@@ -219,9 +220,8 @@ class MediaProjectionService : Service() {
                     setUpVirtualDisplay()
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
+        } catch (throwable: Throwable) {
+            showError(R.string.failed_to_draw_overlay, throwable)
         }
 
     fun tryToDrawOverlay() =
@@ -267,9 +267,9 @@ class MediaProjectionService : Service() {
                     null
                 )
                 createVirtualDisplay(mImageReader)
-            } catch (t: Throwable) {
+            } catch (throwable: Throwable) {
                 overlayView?.isVisible = true
-                Toast.makeText(applicationContext, t.toString(), Toast.LENGTH_LONG).show()
+                showError(R.string.failed_to_take_screenshot, throwable)
             }
         }
     }
@@ -317,26 +317,37 @@ class MediaProjectionService : Service() {
                         overlayBinding!!.image.setImageDrawable(Drawable.createFromPath(mPath))
                     }
                 }
-            } catch (e: java.lang.Exception) {
-                Toast.makeText(applicationContext, e.toString(), Toast.LENGTH_LONG).show()
-                e.printStackTrace()
+            } catch (throwable: Throwable) {
+                showError(R.string.failed_to_save_screenshot, throwable)
             } finally {
                 overlayView?.isVisible = true
-                if (fos != null) {
-                    try {
-                        fos.close()
-                    } catch (ioe: IOException) {
-                        ioe.printStackTrace()
-                    }
-                }
-                bitmap?.recycle()
-                image?.close()
-                mImageReader.close()
+                execSafely { fos?.close() }
+                execSafely { bitmap?.recycle() }
+                execSafely { image?.close() }
+                execSafely { mImageReader.close() }
             }
         }, null)
     }
 
-    fun getAppSpecificAlbumStorageDir(context: Context, albumName: String): File? {
+    private fun showError(@StringRes messageId: Int, throwable: Throwable) {
+        Toast.makeText(
+            applicationContext,
+            applicationContext.getString(messageId) + (if (BuildConfig.DEBUG) "\n\n${throwable}" else ""),
+            Toast.LENGTH_LONG
+        )
+            .show()
+        throwable.printStackTrace()
+    }
+
+    private inline fun execSafely(block: () -> Unit) {
+        try {
+            block()
+        } catch (throwable: Throwable) {
+            throwable.printStackTrace()
+        }
+    }
+
+    private fun getAppSpecificAlbumStorageDir(context: Context, albumName: String): File? {
         // Get the pictures directory that's inside the app-specific directory on
         // external storage.
         val file = File(

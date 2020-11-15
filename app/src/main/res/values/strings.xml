@@ -4,4 +4,7 @@
     <string name="permission_needed">Request permission</string>
     <string name="stop">Stop</string>
     <string name="tap_capture">Tap Capture to take screenshot</string>
+    <string name="failed_to_draw_overlay">Failed to draw overlay</string>
+    <string name="failed_to_take_screenshot">Failed to take screenshot</string>
+    <string name="failed_to_save_screenshot">Failed to save screenshot</string>
 </resources>
