@@ -25,8 +25,6 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Binder
 import android.os.Build
-import android.os.Build.VERSION
-import android.os.Build.VERSION_CODES
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -43,8 +41,6 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.view.isVisible
-import com.anna.sent.soft.R.layout
-import com.anna.sent.soft.R.string
 import com.anna.sent.soft.databinding.OverlayBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -193,7 +189,7 @@ class MediaProjectionService : Service() {
 
     fun drawOverlay() =
         try {
-            val view = LayoutInflater.from(applicationContext).inflate(layout.overlay, null)
+            val view = LayoutInflater.from(applicationContext).inflate(R.layout.overlay, null)
             val params = createOverlayParams(
                 STATUS_START_POINT.x,
                 STATUS_START_POINT.y,
@@ -237,18 +233,12 @@ class MediaProjectionService : Service() {
 
     private var mMediaProjectionManager: MediaProjectionManager? = null
     private var mMediaProjection: MediaProjection? = null
-    private var mScreenDensity: Int? = null
 
     private fun init() {
         mMediaProjectionManager =
             getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mMediaProjection =
             mMediaProjectionManager!!.getMediaProjection(mResultCode, mResultData!!)
-        val metrics = DisplayMetrics()
-        (applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.getMetrics(
-            metrics
-        )
-        mScreenDensity = metrics.densityDpi
     }
 
     private fun setUpVirtualDisplay() {
@@ -268,7 +258,7 @@ class MediaProjectionService : Service() {
                     "CaptureScreen",
                     width,
                     height,
-                    mScreenDensity!!,
+                    densityDpi,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     mImageReader.surface,
                     null,
@@ -296,7 +286,7 @@ class MediaProjectionService : Service() {
                 overlayBinding!!.image.setImageURI(uri)
             }
         } catch (throwable: Throwable) {
-            showError(string.failed_to_save_screenshot, throwable)
+            showError(R.string.failed_to_save_screenshot, throwable)
         } finally {
             overlayView?.isVisible = true
             execSafely { reader.close() }
@@ -329,7 +319,7 @@ class MediaProjectionService : Service() {
 
     private fun createCompressedImageFile(bitmap: Bitmap): File {
         try {
-            val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
+            val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss", Locale.US)
             val formattedDate = df.format(Calendar.getInstance().getTime()).trim()
             val imgName = "Screenshot_$formattedDate.jpg"
             val imageFile = File(getTmpDir(applicationContext), imgName)
@@ -345,7 +335,7 @@ class MediaProjectionService : Service() {
     private fun writeImageFileToMediaStore(imageFile: File): Uri {
         try {
             val resolver = applicationContext.contentResolver
-            return if (VERSION.SDK_INT >= VERSION_CODES.Q) {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val collection =
                     Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
                 val details = ContentValues().apply {
@@ -404,4 +394,9 @@ class MediaProjectionService : Service() {
     private val screenWidth get() = screenSize.x
 
     private val screenHeight get() = screenSize.y
+
+    private val densityDpi
+        get() = DisplayMetrics().apply {
+            windowManager.defaultDisplay.getMetrics(this)
+        }.densityDpi
 }
