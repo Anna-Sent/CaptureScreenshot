@@ -11,8 +11,9 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat.JPEG
-import android.graphics.Bitmap.Config.ARGB_8888
+import android.graphics.Bitmap.Config
 import android.graphics.Color
+import android.graphics.PixelFormat
 import android.graphics.PixelFormat.RGBA_8888
 import android.graphics.Point
 import android.graphics.drawable.Icon
@@ -78,8 +79,6 @@ class MediaProjectionService : Service() {
 
     private var mResultCode = 0
     private var mResultData: Intent? = null
-    private var mScreenWidth: Int = 0
-    private var mScreenHeight: Int = 0
 
     private var overlayView: View? = null
     private var overlayBinding: OverlayBinding? = null
@@ -93,8 +92,6 @@ class MediaProjectionService : Service() {
         if (intent?.action == "init") {
             mResultCode = intent.getIntExtra("code", -1);
             mResultData = intent.getParcelableExtra("data");
-            mScreenWidth = intent.getIntExtra("width", 720);
-            mScreenHeight = intent.getIntExtra("height", 1280);
 
             if (mResultData != null) {
                 init()
@@ -116,8 +113,6 @@ class MediaProjectionService : Service() {
     override fun onDestroy() {
         super.onDestroy()
 
-        val windowManager =
-            applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         overlayView?.let { windowManager.removeView(it) }
     }
 
@@ -198,8 +193,6 @@ class MediaProjectionService : Service() {
 
     fun drawOverlay() =
         try {
-            val windowManager =
-                applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             val view = LayoutInflater.from(applicationContext).inflate(layout.overlay, null)
             val params = createOverlayParams(
                 STATUS_START_POINT.x,
@@ -262,11 +255,19 @@ class MediaProjectionService : Service() {
         overlayView?.isVisible = false
         Handler(Looper.getMainLooper()).post {
             try {
-                val mImageReader = ImageReader.newInstance(720, 1024, RGBA_8888, 1)
+                val width = screenWidth
+                val height = screenHeight
+                val mImageReader =
+                    ImageReader.newInstance(
+                        width,
+                        height,
+                        PixelFormat.RGBA_8888,
+                        1
+                    )
                 mMediaProjection!!.createVirtualDisplay(
                     "CaptureScreen",
-                    720,
-                    1024,
+                    width,
+                    height,
                     mScreenDensity!!,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     mImageReader.surface,
@@ -305,16 +306,20 @@ class MediaProjectionService : Service() {
     private fun createBitmap(reader: ImageReader): Bitmap {
         var image: Image? = null
         try {
-            val mWidth = 720
-            val mHeight = 1024
+            val mWidth = screenWidth
+            val mHeight = screenHeight
+
             image = reader.acquireLatestImage()
             val planes = image.planes
-            val buffer = planes[0]!!.buffer
-            val pixelStride = planes[0]!!.pixelStride
-            val rowStride = planes[0]!!.rowStride
+            val buffer = planes[0].buffer
+            val pixelStride = planes[0].pixelStride
+            val rowStride = planes[0].rowStride
             val rowPadding = rowStride - pixelStride * mWidth
 
-            val bitmap = Bitmap.createBitmap(mWidth + rowPadding / pixelStride, mHeight, ARGB_8888)
+            val bitmap = Bitmap.createBitmap(
+                mWidth + rowPadding / pixelStride, mHeight,
+                Config.ARGB_8888
+            )
             bitmap.copyPixelsFromBuffer(buffer)
             return bitmap
         } finally {
@@ -391,4 +396,12 @@ class MediaProjectionService : Service() {
     }
 
     private fun getTmpDir(context: Context) = context.externalCacheDir ?: context.cacheDir
+
+    private val windowManager get() = applicationContext.getSystemService(WINDOW_SERVICE) as WindowManager
+
+    private val screenSize get() = Point().also { windowManager.defaultDisplay.getSize(it) }
+
+    private val screenWidth get() = screenSize.x
+
+    private val screenHeight get() = screenSize.y
 }
