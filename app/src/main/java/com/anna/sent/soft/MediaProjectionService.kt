@@ -5,26 +5,34 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat.JPEG
+import android.graphics.Bitmap.Config.ARGB_8888
 import android.graphics.Color
 import android.graphics.PixelFormat.RGBA_8888
 import android.graphics.Point
-import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.hardware.display.DisplayManager
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
 import android.os.Binder
 import android.os.Build
+import android.os.Build.VERSION
+import android.os.Build.VERSION_CODES
 import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.MediaStore
+import android.provider.MediaStore.Audio
+import android.provider.MediaStore.Images.Media
 import android.provider.Settings
 import android.util.DisplayMetrics
 import android.view.Gravity
@@ -36,10 +44,12 @@ import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.core.view.isVisible
 import com.anna.sent.soft.R.layout
+import com.anna.sent.soft.R.string
 import com.anna.sent.soft.databinding.OverlayBinding
 import java.io.File
 import java.io.FileOutputStream
-import java.nio.ByteBuffer
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -262,11 +272,13 @@ class MediaProjectionService : Service() {
                     1024,
                     mScreenDensity!!,
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                    mImageReader.getSurface(),
+                    mImageReader.surface,
                     null,
                     null
                 )
-                createVirtualDisplay(mImageReader)
+                mImageReader.setOnImageAvailableListener({ reader ->
+                    onImageAvailable(reader)
+                }, null)
             } catch (throwable: Throwable) {
                 overlayView?.isVisible = true
                 showError(R.string.failed_to_take_screenshot, throwable)
@@ -274,59 +286,100 @@ class MediaProjectionService : Service() {
         }
     }
 
-    private fun createVirtualDisplay(mImageReader: ImageReader) {
-        mImageReader.setOnImageAvailableListener({ reader ->
+    private fun onImageAvailable(reader: ImageReader) {
+        try {
+            val bitmap = createBitmap(reader)
+
+            val imageFile = createCompressedImageFile(bitmap)
+
+            val uri = writeImageFileToMediaStore(imageFile)
+
+            if (overlayBinding != null) {
+                overlayBinding!!.image.setImageURI(uri)
+            }
+        } catch (throwable: Throwable) {
+            showError(string.failed_to_save_screenshot, throwable)
+        } finally {
+            overlayView?.isVisible = true
+            execSafely { reader.close() }
+        }
+    }
+
+    private fun createBitmap(reader: ImageReader): Bitmap {
+        var image: Image? = null
+        try {
             val mWidth = 720
             val mHeight = 1024
+            image = reader.acquireLatestImage()
+            val planes = image.planes
+            val buffer = planes[0]!!.buffer
+            val pixelStride = planes[0]!!.pixelStride
+            val rowStride = planes[0]!!.rowStride
+            val rowPadding = rowStride - pixelStride * mWidth
 
-            var image: Image? = null
-            var fos: FileOutputStream? = null
-            var bitmap: Bitmap? = null
-            try {
-                image = reader.acquireLatestImage()
-                if (image != null) {
-                    var planes: Array<Image.Plane?> = arrayOfNulls<Image.Plane>(0)
-                    planes = image.getPlanes()
-                    val buffer: ByteBuffer = planes[0]!!.getBuffer()
-                    val pixelStride: Int = planes[0]!!.getPixelStride()
-                    val rowStride: Int = planes[0]!!.getRowStride()
-                    val rowPadding: Int = rowStride - pixelStride * mWidth
+            val bitmap = Bitmap.createBitmap(mWidth + rowPadding / pixelStride, mHeight, ARGB_8888)
+            bitmap.copyPixelsFromBuffer(buffer)
+            return bitmap
+        } finally {
+            image?.close()
+        }
+    }
 
-                    bitmap = Bitmap.createBitmap(
-                        mWidth + rowPadding / pixelStride,
-                        mHeight,
-                        Bitmap.Config.ARGB_8888
-                    )
-                    bitmap.copyPixelsFromBuffer(buffer)
-
-                    val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
-                    val formattedDate: String =
-                        df.format(Calendar.getInstance().getTime()).trim()
-                    val finalDate = formattedDate//.replace(":", "")
-                    val imgName: String = "Screenshot_" + finalDate + ".jpg"
-                    val mPath: String =
-                        getAppSpecificAlbumStorageDir(
-                            applicationContext,
-                            "Screnshots"
-                        )?.absolutePath + "/" + imgName
-                    val imageFile = File(mPath)
-                    fos = FileOutputStream(imageFile)
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-
-                    if (overlayBinding != null) {
-                        overlayBinding!!.image.setImageDrawable(Drawable.createFromPath(mPath))
-                    }
-                }
-            } catch (throwable: Throwable) {
-                showError(R.string.failed_to_save_screenshot, throwable)
-            } finally {
-                overlayView?.isVisible = true
-                execSafely { fos?.close() }
-                execSafely { bitmap?.recycle() }
-                execSafely { image?.close() }
-                execSafely { mImageReader.close() }
+    private fun createCompressedImageFile(bitmap: Bitmap): File {
+        try {
+            val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss")
+            val formattedDate: String =
+                df.format(Calendar.getInstance().getTime()).trim()
+            val finalDate = formattedDate//.replace(":", "")
+            val imgName: String = "Screenshot_" + finalDate + ".jpg"
+            val mPath: String =
+                getAppSpecificAlbumStorageDir(
+                    applicationContext,
+                    "Screnshots"
+                )?.absolutePath + "/" + imgName
+            val imageFile = File(mPath)
+            FileOutputStream(imageFile).use {
+                bitmap.compress(JPEG, 100, it)
             }
-        }, null)
+            return imageFile
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    private fun writeImageFileToMediaStore(imageFile: File): Uri {
+        try {
+            val resolver = applicationContext.contentResolver
+            return if (VERSION.SDK_INT >= VERSION_CODES.Q) {
+                val collection =
+                    Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+                val details = ContentValues().apply {
+                    put(Media.DISPLAY_NAME, imageFile.name)
+                    put(Media.RELATIVE_PATH, "Pictures/Screenshots")
+                    put(Audio.Media.IS_PENDING, 1)
+                }
+                resolver.insert(collection, details)!!.apply {
+                    resolver.openFileDescriptor(this, "w", null).use { pfd ->
+                        Files.copy(Paths.get(imageFile.path), FileOutputStream(pfd?.fileDescriptor))
+                    }
+                    details.clear()
+                    details.put(Audio.Media.IS_PENDING, 0)
+                    resolver.update(this, details, null, null)
+                }
+            } else {
+                @Suppress("deprecation")
+                Uri.parse(
+                    Media.insertImage(
+                        resolver,
+                        imageFile.path,
+                        imageFile.name,
+                        imageFile.name
+                    )
+                )
+            }
+        } finally {
+            imageFile.delete()
+        }
     }
 
     private fun showError(@StringRes messageId: Int, throwable: Throwable) {
