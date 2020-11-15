@@ -7,4 +7,5 @@
     <string name="failed_to_draw_overlay">Failed to draw overlay</string>
     <string name="failed_to_take_screenshot">Failed to take screenshot</string>
     <string name="failed_to_save_screenshot">Failed to save screenshot</string>
+    <string name="failed_to_view_image">Failed to open image viewer</string>
 </resources>

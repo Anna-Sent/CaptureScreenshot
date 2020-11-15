@@ -301,12 +301,16 @@ class MediaProjectionService : Service() {
     }
 
     private fun showPhoto(photoUri: Uri) {
-        startActivity(
-            Intent()
-                .setAction(Intent.ACTION_VIEW)
-                .setDataAndType(photoUri, "image/*")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+        try {
+            startActivity(
+                Intent()
+                    .setAction(Intent.ACTION_VIEW)
+                    .setDataAndType(photoUri, "image/*")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (throwable: Throwable) {
+            showError(R.string.failed_to_view_image, throwable)
+        }
     }
 
     private fun createBitmap(reader: ImageReader): Bitmap {

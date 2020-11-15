@@ -7,4 +7,5 @@
     <string name="failed_to_draw_overlay">Ошибка при отрисовке оверлея</string>
     <string name="failed_to_take_screenshot">Ошибка при создании скриншота</string>
     <string name="failed_to_save_screenshot">Ошибка при сохранении скриншота</string>
+    <string name="failed_to_view_image">Ошибка при просмотре изображения</string>
 </resources>
