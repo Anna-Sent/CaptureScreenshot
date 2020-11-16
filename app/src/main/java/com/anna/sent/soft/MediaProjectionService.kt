@@ -388,7 +388,7 @@ class MediaProjectionService : Service() {
     private fun showError(@StringRes messageId: Int, throwable: Throwable) {
         Toast.makeText(
             this,
-            getString(messageId) + (if (BuildConfig.DEBUG) "\n\n${throwable}" else ""),
+            getString(messageId) + (if (BuildConfig.DEBUG) "\n\n$throwable" else ""),
             Toast.LENGTH_LONG
         )
             .show()
