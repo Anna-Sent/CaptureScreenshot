@@ -2,7 +2,6 @@ package com.anna.sent.soft
 
 import android.annotation.TargetApi
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.media.projection.MediaProjectionManager
@@ -39,7 +38,7 @@ class OverlayStarterActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         val intent = Intent(this, MediaProjectionService::class.java)
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE)
+        bindService(intent, mConnection, BIND_AUTO_CREATE)
     }
 
     override fun onStop() {
@@ -70,7 +69,7 @@ class OverlayStarterActivity : AppCompatActivity() {
         startActivityForResult(
             Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:${applicationContext.packageName}")
+                Uri.parse("package:$packageName")
             ),
             REQUEST_PERMISSION
         )
