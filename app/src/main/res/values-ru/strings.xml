@@ -3,7 +3,7 @@
     <string name="capture">Скриншот</string>
     <string name="permission_needed">Разрешение</string>
     <string name="stop">Стоп</string>
-    <string name="tap_capture">Нажмите \"Скриншот\"</string>
+    <string name="tap_capture">Нажмите \"Скриншот\", чтобы сделать снимок экрана</string>
     <string name="failed_to_draw_overlay">Ошибка при отрисовке оверлея</string>
     <string name="failed_to_take_screenshot">Ошибка при создании скриншота</string>
     <string name="failed_to_save_screenshot">Ошибка при сохранении скриншота</string>
