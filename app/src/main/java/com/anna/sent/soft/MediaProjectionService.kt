@@ -7,10 +7,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat.JPEG
 import android.graphics.Bitmap.Config
@@ -33,6 +31,7 @@ import android.provider.MediaStore
 import android.provider.MediaStore.Audio
 import android.provider.MediaStore.Images.Media
 import android.provider.Settings
+import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -100,7 +99,7 @@ class MediaProjectionService : Service() {
 
         if (hasOverlay) {
             val binding = OverlayBinding.bind(overlayView!!)
-            binding.capture.text = applicationContext.getString(
+            binding.capture.text = getString(
                 if (hasMediaProjection) R.string.capture else R.string.permission_needed
             )
         }
@@ -125,19 +124,19 @@ class MediaProjectionService : Service() {
         val contentIntent =
             PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT)
 
-        val appName = applicationContext.getString(R.string.app_name)
+        val appName = getString(R.string.app_name)
         val notification =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel =
                     NotificationChannel(appName, appName, NotificationManager.IMPORTANCE_NONE)
                 channel.lightColor = Color.BLUE
                 channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                 manager.createNotificationChannel(channel)
-                Notification.Builder(applicationContext, appName)
+                Notification.Builder(this, appName)
             } else {
                 @Suppress("deprecation")
-                Notification.Builder(applicationContext)
+                Notification.Builder(this)
             }
                 .setOngoing(true)
                 .setSmallIcon(R.drawable.ic_camera)
@@ -146,11 +145,11 @@ class MediaProjectionService : Service() {
                 .setContentIntent(contentIntent)
                 .addAction(
                     run {
-                        val stop = applicationContext.getString(R.string.stop)
+                        val stop = getString(R.string.stop)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             Notification.Action.Builder(
                                 Icon.createWithResource(
-                                    applicationContext,
+                                    this,
                                     R.drawable.ic_stop
                                 ),
                                 stop,
@@ -192,7 +191,7 @@ class MediaProjectionService : Service() {
     fun drawOverlay() =
         try {
             @SuppressLint("InflateParams")
-            val view = LayoutInflater.from(applicationContext).inflate(R.layout.overlay, null)
+            val view = LayoutInflater.from(this).inflate(R.layout.overlay, null)
             val params = createOverlayParams(
                 STATUS_START_POINT.x,
                 STATUS_START_POINT.y,
@@ -203,12 +202,12 @@ class MediaProjectionService : Service() {
             overlayView = view
             val binding = OverlayBinding.bind(view)
             overlayBinding = binding
-            binding.capture.text = applicationContext.getString(
+            binding.capture.text = getString(
                 if (hasMediaProjection) R.string.capture else R.string.permission_needed
             )
             binding.capture.setOnClickListener {
                 if (mResultData == null) {
-                    applicationContext.startActivity(
+                    startActivity(
                         Intent(
                             this,
                             OverlayStarterActivity::class.java
@@ -227,10 +226,7 @@ class MediaProjectionService : Service() {
         }
 
     fun tryToDrawOverlay() =
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(
-                applicationContext
-            )
-        ) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this)) {
             drawOverlay()
             true
         } else {
@@ -317,18 +313,19 @@ class MediaProjectionService : Service() {
     private fun createBitmap(reader: ImageReader): Bitmap {
         var image: Image? = null
         try {
-            val mWidth = screenWidth
-            val mHeight = screenHeight
-
             image = reader.acquireLatestImage()
+
+            val width = image.width
+            val height = image.height
+
             val planes = image.planes
             val buffer = planes[0].buffer
             val pixelStride = planes[0].pixelStride
             val rowStride = planes[0].rowStride
-            val rowPadding = rowStride - pixelStride * mWidth
+            val rowPadding = rowStride - pixelStride * width
 
             val bitmap = Bitmap.createBitmap(
-                mWidth + rowPadding / pixelStride, mHeight,
+                width + rowPadding / pixelStride, height,
                 Config.ARGB_8888
             )
             bitmap.copyPixelsFromBuffer(buffer)
@@ -343,7 +340,7 @@ class MediaProjectionService : Service() {
             val df = SimpleDateFormat("yyyyMMdd-HHmmss.sss", Locale.US)
             val formattedDate = df.format(System.currentTimeMillis())
             val imgName = "Screenshot_$formattedDate.jpg"
-            val imageFile = File(getTmpDir(applicationContext), imgName)
+            val imageFile = File(getTmpDir(), imgName)
             FileOutputStream(imageFile).use {
                 bitmap.compress(JPEG, 100, it)
             }
@@ -355,7 +352,7 @@ class MediaProjectionService : Service() {
 
     private fun writeImageFileToMediaStore(imageFile: File): Uri {
         try {
-            val resolver = applicationContext.contentResolver
+            val resolver = contentResolver
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val collection =
                     Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -390,8 +387,8 @@ class MediaProjectionService : Service() {
 
     private fun showError(@StringRes messageId: Int, throwable: Throwable) {
         Toast.makeText(
-            applicationContext,
-            applicationContext.getString(messageId) + (if (BuildConfig.DEBUG) "\n\n${throwable}" else ""),
+            this,
+            getString(messageId) + (if (BuildConfig.DEBUG) "\n\n${throwable}" else ""),
             Toast.LENGTH_LONG
         )
             .show()
@@ -406,13 +403,22 @@ class MediaProjectionService : Service() {
         }
     }
 
-    private fun getTmpDir(context: Context) = context.externalCacheDir ?: context.cacheDir
+    private fun getTmpDir() = externalCacheDir ?: cacheDir
 
-    private val windowManager get() = applicationContext.getSystemService(WINDOW_SERVICE) as WindowManager
+    private val windowManager by lazy { getSystemService(WINDOW_SERVICE) as WindowManager }
 
-    private val screenWidth get() = Resources.getSystem().displayMetrics.widthPixels
+    private val screenWidth by lazy { displayMetrics.widthPixels }
 
-    private val screenHeight get() = Resources.getSystem().displayMetrics.heightPixels
+    private val screenHeight by lazy { displayMetrics.heightPixels }
 
-    private val densityDpi get() = Resources.getSystem().displayMetrics.densityDpi
+    private val displayMetrics by lazy {
+        DisplayMetrics().apply {
+            screenDisplay.getRealMetrics(this)
+        }
+    }
+
+    @Suppress("deprecation")
+    private val screenDisplay by lazy { windowManager.defaultDisplay }
+
+    private val densityDpi get() = displayMetrics.densityDpi
 }
